@@ -1,4 +1,5 @@
-import type { Place, Review, Collection, UserProfile, Article } from '../types';
+import type { Place, Review, Collection, UserProfile, Article, Category } from '../types';
+import { getTelegramWebData } from '../utils/telegram';
 
 // Интерфейсы для запросов
 interface GetFeedParams {
@@ -14,121 +15,166 @@ interface SearchParams {
   isPremium?: boolean;
 }
 
+interface SearchPlacesParams {
+  query?: string;
+  category?: number;
+  limit?: number;
+  offset?: number;
+}
+
+interface SearchPlacesResponse {
+  items: Array<{
+    id: number;
+    name: string;
+    address?: string;
+    description?: string;
+    isPremium?: boolean;
+    priceLevel?: number;
+    coordinates?: { lat: number; lng: number };
+    phone?: string;
+    [key: string]: any; // для других возможных полей
+  }>;
+}
+
+// Базовые настройки API
+const BASE_URL = 'http://localhost:8080'; // Используем HTTP для локальной разработки
+
+// Вспомогательные функции для запросов с авторизацией
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer tgWebAppData=${getTelegramWebData()}`
+});
+
+const GET = async <T>(url: string, params?: Record<string, any>): Promise<T> => {
+  const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+  const response = await fetch(`${BASE_URL}${url}${queryString}`, {
+    method: 'GET',
+    headers: getHeaders()
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+const POST = async <T>(url: string, data: Record<string, any>): Promise<T> => {
+  const response = await fetch(`${BASE_URL}${url}`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+const PUT = async <T>(url: string, data: Record<string, any>): Promise<T> => {
+  const response = await fetch(`${BASE_URL}${url}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+const DELETE = async <T>(url: string): Promise<T> => {
+  const response = await fetch(`${BASE_URL}${url}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
 // API endpoints
 const API = {
   // Места
   places: {
-    // Получить ленту мест
     getFeed: (params?: GetFeedParams): Promise<Place[]> => 
       GET('/api/feed', params),
-    
-    // Получить детали места
-    getPlace: (id: number): Promise<Place> => 
+
+    getPlace: (id: string): Promise<Place> => 
       GET(`/api/places/${id}`),
-    
-    // Поиск мест
+
     search: (params: SearchParams): Promise<Place[]> => 
       GET('/api/places/search', params),
-    
-    // Добавить место в избранное
+
     addToFavorites: (placeId: number): Promise<void> => 
-      POST('/api/places/favorites', { placeId }),
-    
-    // Удалить место из избранных
+      POST(`/api/places/${placeId}/favorite`, {}),
+
     removeFromFavorites: (placeId: number): Promise<void> => 
-      DELETE(`/api/places/favorites/${placeId}`),
-    
-    // Добавить отзыв
+      DELETE(`/api/places/${placeId}/favorite`),
+
     addReview: (placeId: number, review: Omit<Review, 'id' | 'date'>): Promise<Review> => 
       POST(`/api/places/${placeId}/reviews`, review)
   },
 
   // Подборки
   collections: {
-    // Получить список подборок
     getCollections: (): Promise<Collection[]> => 
       GET('/api/collections'),
     
-    // Получить подборку по ID
     getCollection: (id: number): Promise<Collection> => 
       GET(`/api/collections/${id}`),
     
-    // Создать новую подборку
     createCollection: (data: Omit<Collection, 'id'>): Promise<Collection> => 
       POST('/api/collections', data),
     
-    // Добавить место в подборку
     addPlace: (collectionId: number, placeId: number): Promise<void> => 
       POST(`/api/collections/${collectionId}/places`, { placeId }),
     
-    // Удалить место из подборки
     removePlace: (collectionId: number, placeId: number): Promise<void> => 
       DELETE(`/api/collections/${collectionId}/places/${placeId}`)
   },
 
   // Профиль
   profile: {
-    // Получить профиль пользователя
     getProfile: (): Promise<UserProfile> => 
       GET('/api/profile'),
     
-    // Обновить профиль
     updateProfile: (data: Partial<UserProfile>): Promise<UserProfile> => 
       PUT('/api/profile', data),
     
-    // Получить избранные места
     getFavorites: (): Promise<Place[]> => 
       GET('/api/profile/favorites'),
     
-    // Получить отзывы пользователя
     getReviews: (): Promise<Review[]> => 
       GET('/api/profile/reviews')
   },
 
+  // Категории
+  categories: {
+    getCategories: (): Promise<{ items: Category[] }> => GET('/api/categories'),
+  },
+
+  // Поиск
+  search: {
+    getPlaces: (params: SearchPlacesParams): Promise<SearchPlacesResponse> => 
+      GET('/api/search', params),
+  },
+
   // Статьи
   articles: {
-    // Получить список статей
     getArticles: (): Promise<Article[]> => 
       GET('/api/articles'),
     
-    // Получить статью по ID
     getArticle: (id: number): Promise<Article> => 
       GET(`/api/articles/${id}`)
   }
-};
-
-// Вспомогательные функции для запросов
-const GET = async <T>(url: string, params?: Record<string, any>): Promise<T> => {
-  const queryString = params ? `?${new URLSearchParams(params as Record<string, string>)}` : '';
-  const response = await fetch(url + queryString);
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.json();
-};
-
-const POST = async <T>(url: string, data: Record<string, any>): Promise<T> => {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.json();
-};
-
-const PUT = async <T>(url: string, data: Record<string, any>): Promise<T> => {
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.json();
-};
-
-const DELETE = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url, { method: 'DELETE' });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.json();
 };
 
 export default API;

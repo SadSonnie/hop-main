@@ -1,62 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon } from 'lucide-react';
 import PlaceCard from '../places/PlaceCard';
-import { fetchFeedItems } from '../../services/feedService';
-import type { FeedItem, Place } from '../../types';
-
-const categories = [
-  { id: 'friends', name: 'С друзьями' },
-  { id: 'pets', name: 'С животными' },
-  { id: 'partner', name: 'С партнером' },
-  { id: 'family', name: 'С семьей' },
-  { id: 'self', name: 'Саморазвитие' },
-  { id: 'alone', name: 'Одному' },
-  { id: 'shopping', name: 'Шоппинг' },
-  { id: 'kids', name: 'Для детей' },
-  { id: 'beauty', name: 'Бьюти/спа' },
-  { id: 'food', name: 'Еда' },
-  { id: 'entertainment', name: 'Развлечения' },
-  { id: 'culture', name: 'Культура' },
-  { id: 'activity', name: 'Активный отдых' }
-];
+import type { Category } from '../../types';
+import API from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const SearchView = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [places, setPlaces] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const loadPlaces = async () => {
+    const loadCategories = async () => {
       try {
-        const items = await fetchFeedItems();
-        const allPlaces = items
-          .flatMap(item => {
-            if (item.type === 'place') {
-              return [item.data as Place];
-            } else if (item.type === 'collection') {
-              return (item.data as any).places || [];
-            }
-            return [];
-          })
-          // Преобразуем строку расстояния в число для сортировки
-          .map(place => ({
-            ...place,
-            distanceNum: parseFloat(place.distance.split(' ')[0])
-          }))
-          // Сортируем по расстоянию
-          .sort((a, b) => a.distanceNum - b.distanceNum);
-
-        setPlaces(allPlaces);
+        const data = await API.categories.getCategories();
+        setCategories(data.items);
       } catch (error) {
-        console.error('Failed to load places:', error);
+        console.error('Failed to load categories:', error);
       }
     };
 
-    loadPlaces();
+    loadCategories();
   }, []);
 
+  useEffect(() => {
+    const searchPlaces = async () => {
+      try {
+        setIsLoading(true);
+        const params: any = {
+          limit: 10,
+          offset: 0
+        };
+
+        if (searchQuery) {
+          params.query = searchQuery;
+        }
+
+        if (selectedCategory) {
+          params.category = selectedCategory;
+        }
+
+        const data = await API.search.getPlaces(params);
+        console.log('API Response:', data);
+
+        // Преобразуем данные в формат, который ожидает PlaceCard
+        const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
+        const formattedPlaces = data.items.map(place => ({
+          ...place,
+          id: parseInt(place.id),
+          mainTag: categories.find(cat => cat.id === parseInt(place.category_id))?.name || '',
+          imageUrl: place.image || defaultImage,
+          rating: place.rating || 0,
+          distance: place.distance || '0 км',
+          tagIds: place.tag_ids?.map(String) || [], // Преобразуем числовые ID в строки
+          priceLevel: place.priceLevel || 1,
+          isPremium: place.isPremium || false
+        }));
+        
+        console.log('All formatted places:', formattedPlaces);
+        setPlaces(formattedPlaces);
+      } catch (error) {
+        console.error('Failed to search places:', error);
+        setPlaces([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchPlaces, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, selectedCategory, categories]);
+
   return (
-    <div className="bg-[#FEFEFE] pt-14 pb-7">
+    <div className="bg-[#FEFEFE] pt-14">
       <div className="px-4 pt-4">
         <div className="relative flex justify-center">
           <input
@@ -78,10 +97,10 @@ const SearchView = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(isSelected ? null : category.id)}
-                className={`h-[37px] px-4 whitespace-nowrap rounded-[100px] border border-[#969699] text-[14px] leading-[16.77px] tracking-[-2%] font-[500] ${
+                className={`h-[37px] px-4 whitespace-nowrap rounded-[100px] border text-[14px] leading-[16.77px] tracking-[-2%] font-[500] ${
                   isSelected
                     ? 'bg-[#F9F9FE] border-[#1E47F7] text-[#1E47F7]'
-                    : 'bg-[#FEFEFE] text-[#020203]'
+                    : 'bg-[#FEFEFE] border-[#969699] text-[#020203]'
                 }`}
               >
                 {category.name}
@@ -92,13 +111,24 @@ const SearchView = () => {
       </div>
 
       {/* Список мест */}
-      <div>
-        {places.map((place) => (
-          <PlaceCard
-            key={place.id}
-            {...place}
-          />
-        ))}
+      <div className="pb-28">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-gray-600">Загрузка...</div>
+          </div>
+        ) : places.length > 0 ? (
+          places.map((place) => (
+            <PlaceCard
+              key={place.id}
+              {...place}
+              onClick={() => navigate(`/place/${place.id}`)}
+            />
+          ))
+        ) : (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-gray-600">Ничего не найдено</div>
+          </div>
+        )}
       </div>
     </div>
   );

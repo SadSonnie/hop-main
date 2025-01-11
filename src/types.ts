@@ -41,4 +41,14 @@ export interface FeedItem {
   data: Place | Collection;
 }
 
+export interface UserProfile {
+  id: number;
+  firstName: string;
+  lastName: string;
+  username: string;
+  languageCode: string;
+  visitedPlaces?: Place[];
+  favorites?: Place[];
+}
+
 export type TabType = 'главная' | 'поиск' | 'статьи' | 'профиль';

@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PlaceCard from './PlaceCard';
-import FeaturedCollection from './FeaturedCollection';
-import { fetchFeedItems } from '../../services/feedService';
-import type { Place, FeedItem, Collection } from '../../types';
+import CollectionCard from './CollectionCard';
+import { fetchFeed } from '../../services/feedService';
+import type { Place, Collection } from '../../types';
+
+interface FeedItem {
+  id: string;
+  type: 'place' | 'collection';
+  data: Place | Collection;
+}
 
 const PlacesList: React.FC = () => {
   const navigate = useNavigate();
@@ -16,8 +22,9 @@ const PlacesList: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const items = await fetchFeedItems();
-        setFeedItems(items.sort((a, b) => a.order - b.order));
+        const response = await fetchFeed();
+        console.log('Feed API Response:', response);
+        setFeedItems(response.items);
       } catch (error) {
         console.error('Failed to load feed:', error);
         setError('Failed to load feed items');
@@ -29,14 +36,14 @@ const PlacesList: React.FC = () => {
     loadFeed();
   }, []);
 
-  const handlePlaceClick = (place: Place) => {
-    navigate(`/place/${place.id}`);
+  const handlePlaceClick = (placeId: string | number) => {
+    navigate(`/place/${placeId}`);
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">Загрузка...</div>
       </div>
     );
   }
@@ -49,27 +56,45 @@ const PlacesList: React.FC = () => {
     );
   }
 
+  const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
+
   return (
-    <div className="pb-16">
-      <div className="bg-[#fafafa] pt-14 pb-7">
-        {feedItems.map((item) => (
-          <div key={item.id}>
-            {item.type === 'place' ? (
-              <PlaceCard {...item.data as Place} onClick={() => handlePlaceClick(item.data as Place)} />
-            ) : (
-              <FeaturedCollection 
-                collection={item.data as Collection} 
-                onPlaceClick={(placeId) => {
-                  const place = (item.data as Collection).places.find(p => p.id === placeId);
-                  if (place) {
-                    handlePlaceClick(place);
-                  }
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="grid grid-cols-1 gap-4 p-4">
+      {feedItems.map(item => (
+        item.type === 'place' ? (
+          <PlaceCard
+            key={item.id}
+            place={{
+              id: parseInt(item.id),
+              name: item.data.name || '',
+              address: item.data.address || '',
+              mainTag: '',
+              imageUrl: item.data.image || defaultImage,
+              rating: item.data.rating || 0,
+              distance: item.data.distance || '0 км',
+              tagIds: item.data.tags_ids?.map(String) || [],
+              priceLevel: item.data.priceLevel || 1,
+              isPremium: item.data.isPremium || false
+            }}
+            onClick={() => handlePlaceClick(item.id)}
+          />
+        ) : (
+          <CollectionCard
+            key={item.id}
+            collection={{
+              id: parseInt(item.id),
+              title: item.data.title || 'Без названия',
+              places: item.data.places?.map(place => ({
+                id: place.id,
+                name: place.name,
+                address: place.address,
+                imageUrl: place.imageUrl || defaultImage
+              })) || []
+            }}
+            onPlaceClick={handlePlaceClick}
+          />
+        )
+      ))}
     </div>
   );
 };

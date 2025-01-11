@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Share2, ArrowLeft, MapPin, Star, Phone, Mail, Instagram } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Place } from '../../../types';
-import { fetchPlaceById } from '../../../services/feedService';
+import API from '../../../services/api';
 import ReviewCard from './ReviewCard';
 import { RatingStars } from './RatingStars';
 import { tags } from '../../../data/tags';
@@ -45,24 +45,57 @@ const PlaceDetailsView: React.FC = () => {
   const navigate = useNavigate();
   const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
   const [[page, direction], setPage] = useState([0, 0]);
   const [wasHere, setWasHere] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Загружаем категории
   useEffect(() => {
-    const loadPlace = async () => {
-      if (id) {
-        try {
-          const placeData = await fetchPlaceById(parseInt(id, 10));
-          setPlace(placeData);
-        } catch (error) {
-          console.error('Failed to load place:', error);
-          navigate('/');
-        }
+    const loadCategories = async () => {
+      try {
+        const data = await API.categories.getCategories();
+        setCategories(data.items);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
       }
     };
-    loadPlace();
-  }, [id, navigate]);
+
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchPlace = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const placeData = await API.places.getPlace(id);
+        const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
+        const tagIds = placeData.tags_ids || [];
+        
+        setPlace({
+          ...placeData,
+          id: parseInt(placeData.id),
+          mainTag: categories.find(cat => cat.id === parseInt(placeData.category_id))?.name || '',
+          imageUrl: placeData.image || defaultImage,
+          rating: placeData.rating || 0,
+          distance: placeData.distance || '0 км',
+          tagIds: tagIds.map(String),
+          priceLevel: placeData.priceLevel || 1,
+          isPremium: placeData.isPremium || false,
+          reviews: [],
+          images: [placeData.image || defaultImage]
+        });
+      } catch (error) {
+        console.error('Error fetching place:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlace();
+  }, [id, categories]);
 
   useEffect(() => {
     if (place?.images) {
@@ -80,24 +113,26 @@ const PlaceDetailsView: React.FC = () => {
 
   if (loading || !place) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading...</div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-gray-600">Загрузка...</div>
       </div>
     );
   }
-
-  // Расчет средней оценки
-  const averageRating = place.reviews && place.reviews.length > 0
-    ? (place.reviews.reduce((sum, review) => sum + review.rating, 0) / place.reviews.length).toFixed(1)
-    : "0";
 
   const handleBack = () => {
     navigate('/');
   };
 
-  const imageIndex = Math.abs(page % place.images.length);
-  const nextImageIndex = Math.abs((page + 1) % place.images.length);
-  const prevImageIndex = Math.abs((page - 1) % place.images.length);
+  const images = place.images || [place.imageUrl];
+  const imageIndex = Math.abs(page % images.length);
+  const nextImageIndex = Math.abs((page + 1) % images.length);
+  const prevImageIndex = Math.abs((page - 1) % images.length);
+
+  // Расчет средней оценки и количества отзывов
+  const reviews = place.reviews || [];
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
 
   const swipeConfidenceThreshold = 10000;
   const swipePower = (offset: number, velocity: number) => {
@@ -189,7 +224,7 @@ const PlaceDetailsView: React.FC = () => {
             {/* Теги над слайдером */}
             <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-0.5">
               {place.tagIds?.map(tagId => {
-                const tag = tags.find(t => t.id === tagId);
+                const tag = tags.find(t => String(t.id) === String(tagId));
                 return tag ? (
                   <div
                     key={tag.id}
@@ -246,7 +281,7 @@ const PlaceDetailsView: React.FC = () => {
                 }}
               >
                 <img
-                  src={place.images[imageIndex]}
+                  src={images[imageIndex]}
                   alt={place.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -264,7 +299,7 @@ const PlaceDetailsView: React.FC = () => {
                     }}
                   >
                     <img
-                      src={place.images[prevImageIndex]}
+                      src={images[prevImageIndex]}
                       alt={place.name}
                       className="w-full h-full object-cover rounded-xl"
                     />
@@ -280,7 +315,7 @@ const PlaceDetailsView: React.FC = () => {
                     }}
                   >
                     <img
-                      src={place.images[nextImageIndex]}
+                      src={images[nextImageIndex]}
                       alt={place.name}
                       className="w-full h-full object-cover rounded-xl"
                     />
@@ -291,7 +326,7 @@ const PlaceDetailsView: React.FC = () => {
 
             {/* Индикаторы слайдера */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-              {place.images.map((_, index) => (
+              {images.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => !isDragging && handleDotClick(index)}
@@ -405,7 +440,7 @@ const PlaceDetailsView: React.FC = () => {
         {/* Отзывы */}
         <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-2xl p-4`}>
           <div className={`text-[14px] font-[500] leading-[16.77px] tracking-[-0.02em] mb-4 ${place.isPremium ? 'text-white' : 'text-[#020203]'}`}>
-            {place.reviews?.length || 0} отзыва
+            {reviews.length} отзыва
           </div>
             
           {/* Блок рейтинга */}
@@ -419,13 +454,17 @@ const PlaceDetailsView: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-[14px] font-[500] leading-[16.77px] tracking-[-0.02em] text-[#020203]">
-                  {place.reviews.length} отзывов
+                  {reviews.length} отзывов
                 </span>
                 <div className="w-[80px] h-[16px] flex gap-[2px]">
-                  {[...Array(5)].map((_, star) => (
-                    <Star 
-                      key={star} 
-                      className="w-3 h-3 text-[#2846ED] fill-[#2846ED]"
+                  {[...Array(5)].map((_, index) => (
+                    <Star
+                      key={index}
+                      size={16}
+                      className={index < Math.round(parseFloat(averageRating))
+                        ? 'text-[#1E47F7] fill-[#1E47F7]'
+                        : 'text-[#969699]'
+                      }
                     />
                   ))}
                 </div>
@@ -450,7 +489,7 @@ const PlaceDetailsView: React.FC = () => {
           {/* Список отзывов */}
           <div className="mt-4">
             {place.isPremium ? (
-              place.reviews?.map((review, index) => (
+              reviews.map((review, index) => (
                 <div key={index} className="mb-4 last:mb-0">
                   <div className="flex items-center gap-2 mb-2">
                     <img 
@@ -488,7 +527,7 @@ const PlaceDetailsView: React.FC = () => {
                 </div>
               ))
             ) : (
-              place.reviews?.map((review) => (
+              reviews.map((review) => (
                 <ReviewCard key={review.id} review={review} />
               ))
             )}
