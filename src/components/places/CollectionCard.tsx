@@ -104,7 +104,9 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ place, onClick }) => {
 
         {/* Текст поверх градиента */}
         <div className="absolute bottom-3 left-3 right-3">
-          <h3 className="font-bold text-lg text-white mb-1">{place.name}</h3>
+          <h3 className="font-bold text-lg text-white mb-1">
+            {place.mainTag && `${place.mainTag} `}{place.name}
+          </h3>
           <p className="text-sm text-gray-200">{place.description}</p>
         </div>
       </div>

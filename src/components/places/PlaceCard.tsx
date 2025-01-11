@@ -63,7 +63,7 @@ const PlaceCard = ({
   const renderPriceLevel = () => {
     return Array(3).fill(0).map((_, index) => (
       <span 
-        key={index} 
+        key={`price-${id}-${index}`} 
         className="text-[12px] font-[500] leading-[14.38px] tracking-[-0.04em] text-white" 
         style={{ opacity: index < priceLevel ? 1 : 0.5 }}
       >
@@ -89,6 +89,7 @@ const PlaceCard = ({
       {/* Изображение с метриками */}
       <div className="relative h-[140px] rounded-xl overflow-hidden mx-4 mt-4">
         <img
+          key={`place-image-${id}`}
           src={imageUrl}
           alt={name}
           className="w-full h-full object-cover rounded-xl"
@@ -127,9 +128,9 @@ const PlaceCard = ({
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-medium">{`${mainTag} ${name}`}</h3>
           <div className="flex items-center gap-2">
-            {displayTags.map(tag => (
+            {displayTags.map((tag, index) => (
               <img 
-                key={tag?.id} 
+                key={`tag-${id}-${tag?.id || index}`} 
                 src={tag?.iconSrc} 
                 alt={tag?.name}
                 title={tag?.name}
