@@ -19,6 +19,15 @@ interface ApiFeedItem {
     name: string;
     address: string;
   }>;
+  Category?: {
+    name: string;
+  };
+  main_photo_url?: string;
+  PlaceTags?: Array<{
+    placesItems: {
+      id: number;
+    };
+  }>;
 }
 
 interface ApiFeedResponse {
@@ -51,13 +60,13 @@ const adaptPlace = (apiPlace: ApiFeedItem): Place => {
   return {
     id: Number(apiPlace.id),
     name: apiPlace.name || '',
-    mainTag: '',
+    mainTag: apiPlace.Category?.name || '',
     description: apiPlace.description || '',
     rating: 4.5,
     distance: '2 км',
-    imageUrl: defaultPlaceImage,
+    imageUrl: apiPlace.main_photo_url || defaultPlaceImage,
     isPremium: apiPlace.isPremium || false,
-    tagIds: apiPlace.tags_ids || [],
+    tagIds: (apiPlace.PlaceTags || []).map(tag => tag.placesItems.id),
     address: apiPlace.address || '',
     priceLevel: apiPlace.priceLevel || 2
   };

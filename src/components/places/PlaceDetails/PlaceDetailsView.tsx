@@ -71,21 +71,23 @@ const PlaceDetailsView: React.FC = () => {
       try {
         setLoading(true);
         const placeData = await API.places.getPlace(id);
-        const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
-        const tagIds = placeData.tags_ids || [];
+        const defaultPlaceImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
         
         setPlace({
           ...placeData,
           id: parseInt(placeData.id),
-          mainTag: categories.find(cat => cat.id === parseInt(placeData.category_id))?.name || '',
-          imageUrl: placeData.image || defaultImage,
-          rating: placeData.rating || 0,
-          distance: placeData.distance || '0 км',
-          tagIds: tagIds.map(String),
+          mainTag: placeData.Category?.name || '',
+          name: placeData.name,
+          description: placeData.description,
+          address: placeData.address,
+          imageUrl: placeData.main_photo_url || defaultPlaceImage,
+          rating: 4.5,
+          distance: '2 км',
+          tagIds: (placeData.PlaceTags || []).map(tag => String(tag.placesItems.id)),
           priceLevel: placeData.priceLevel || 1,
           isPremium: placeData.isPremium || false,
           reviews: [],
-          images: [placeData.image || defaultImage]
+          images: placeData.photos?.map(photo => photo.url) || []
         });
       } catch (error) {
         console.error('Error fetching place:', error);
