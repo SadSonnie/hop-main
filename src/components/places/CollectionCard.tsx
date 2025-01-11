@@ -1,40 +1,111 @@
 import React from 'react';
-import type { Collection } from '../../types';
+import { Star, MapPin } from 'lucide-react';
+import type { Place } from '../../types';
 
 interface CollectionCardProps {
-  collection: Collection;
-  onPlaceClick: (id: string | number) => void;
+  place: Place;
+  onClick: () => void;
 }
 
-const CollectionCard: React.FC<CollectionCardProps> = ({ collection, onPlaceClick }) => {
-  const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
+const CollectionCard: React.FC<CollectionCardProps> = ({ place, onClick }) => {
+  const renderPriceLevel = () => {
+    return Array(3).fill(0).map((_, index) => {
+      if (place.isPremium) {
+        const color = index < (place.priceLevel || 1) ? '#1e47f7' : '#9aacfb';
+        return (
+          <span 
+            key={index} 
+            className="text-sm font-medium leading-none" 
+            style={{ color }}
+          >
+            ₽
+          </span>
+        );
+      } else {
+        const color = index < (place.priceLevel || 1) ? 'white' : '#8d8d8e';
+        return (
+          <span 
+            key={index} 
+            className="text-sm font-medium leading-none" 
+            style={{ color }}
+          >
+            ₽
+          </span>
+        );
+      }
+    });
+  };
+
+  const metricStyles = place.isPremium ? {
+    background: '#eceffd',
+    textColor: '#1e47f7',
+    iconColor: '#1e47f7'
+  } : {
+    background: 'rgba(0, 0, 0, 0.1)',
+    textColor: 'white',
+    iconColor: 'white'
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-2">{collection.title}</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {collection.places.map(place => (
-            <div
-              key={place.id}
-              onClick={() => onPlaceClick(place.id)}
-              className="cursor-pointer"
+    <div
+      onClick={onClick}
+      className={`flex-shrink-0 w-64 mx-2 cursor-pointer rounded-2xl overflow-hidden ${
+        place.isPremium ? 'shadow-[0_0_15px_rgba(30,71,247,0.15)]' : ''
+      }`}
+    >
+      <div className="relative h-48">
+        <img
+          src={place.imageUrl}
+          alt={place.name}
+          className={`w-full h-full object-cover ${
+            place.isPremium ? 'brightness-105' : ''
+          }`}
+        />
+        {/* Премиальный градиент */}
+        {place.isPremium && (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1e47f7]/20 via-transparent to-[#1e47f7]/5" />
+        )}
+        {/* Основной градиент для текста */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        
+        {/* Метрики в левом нижнем углу */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          <div 
+            className="h-[22px] backdrop-blur-md px-2.5 rounded-[100px] flex items-center gap-1"
+            style={{ background: metricStyles.background }}
+          >
+            <span 
+              className="text-[12px] font-medium leading-[14.38px] tracking-[-0.02em]" 
+              style={{ color: metricStyles.textColor }}
             >
-              <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
-                <img
-                  src={place.imageUrl || defaultImage}
-                  alt={place.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="mt-1">
-                <h4 className="text-sm font-medium truncate">{place.name}</h4>
-                {place.address && (
-                  <p className="text-xs text-gray-500 truncate">{place.address}</p>
-                )}
-              </div>
-            </div>
-          ))}
+              {place.rating}
+            </span>
+            <Star className="w-[14px] h-[14px] fill-current" style={{ color: metricStyles.iconColor }} />
+          </div>
+          <div 
+            className="h-[22px] backdrop-blur-md px-2.5 rounded-[100px] flex items-center"
+            style={{ background: metricStyles.background }}
+          >
+            <MapPin className="w-[14px] h-[14px]" style={{ color: metricStyles.iconColor }} />
+            <span 
+              className="ml-1 text-[12px] font-medium leading-[14.38px] tracking-[-0.02em]" 
+              style={{ color: metricStyles.textColor }}
+            >
+              {`${place.distance}`}
+            </span>
+          </div>
+          <div 
+            className="h-[22px] backdrop-blur-md px-2.5 rounded-[100px] flex items-center gap-0.5"
+            style={{ background: metricStyles.background }}
+          >
+            {renderPriceLevel()}
+          </div>
+        </div>
+
+        {/* Текст поверх градиента */}
+        <div className="absolute bottom-3 left-3 right-3">
+          <h3 className="font-bold text-lg text-white mb-1">{place.name}</h3>
+          <p className="text-sm text-gray-200">{place.description}</p>
         </div>
       </div>
     </div>
