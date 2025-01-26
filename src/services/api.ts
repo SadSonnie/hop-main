@@ -37,7 +37,7 @@ interface SearchPlacesResponse {
 }
 
 // Базовые настройки API
-const BASE_URL = 'http://localhost:8080'; // Используем HTTP для локальной разработки
+const BASE_URL = 'https://back.hoptesthop.ru'; // Используем HTTP для локальной разработки
 
 // Вспомогательные функции для запросов с авторизацией
 const getHeaders = () => ({
