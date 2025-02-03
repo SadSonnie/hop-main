@@ -9,10 +9,10 @@ interface BottomNavigationProps {
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
-    { id: 'главная' as TabType, label: 'Главная', icon: '/src/assets/icons/home.svg' },
-    { id: 'поиск' as TabType, label: 'Поиск', icon: '/src/assets/icons/search.svg' },
-    { id: 'статьи' as TabType, label: 'Статьи', icon: '/src/assets/icons/articles.svg' },
-    { id: 'профиль' as TabType, label: 'Профиль', icon: '/src/assets/icons/profile.svg' },
+    { id: 'главная' as TabType, label: 'Главная', icon: '/icons/home.svg' },
+    { id: 'поиск' as TabType, label: 'Поиск', icon: '/icons/search.svg' },
+    { id: 'статьи' as TabType, label: 'Статьи', icon: '/icons/articles.svg' },
+    { id: 'профиль' as TabType, label: 'Профиль', icon: '/icons/profile.svg' },
   ];
 
   return (

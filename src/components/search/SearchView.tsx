@@ -44,20 +44,23 @@ const SearchView = () => {
         }
 
         const data = await API.search.getPlaces(params);
-        console.log('API Response:', data);
+        console.log('API Response raw data:', JSON.stringify(data, null, 2));
+        console.log('First place from API:', JSON.stringify(data.items[0], null, 2));
 
         // Преобразуем данные в формат, который ожидает PlaceCard
         const defaultImage = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=60';
         const formattedPlaces = data.items.map(place => ({
-          ...place,
           id: parseInt(place.id),
+          name: place.name || '',
           mainTag: categories.find(cat => cat.id === parseInt(place.category_id))?.name || '',
-          imageUrl: place.image || defaultImage,
-          rating: place.rating || 0,
-          distance: place.distance || '0 км',
-          tagIds: place.tag_ids?.map(String) || [], // Преобразуем числовые ID в строки
-          priceLevel: place.priceLevel || 1,
-          isPremium: place.isPremium || false
+          description: place.description || '',
+          rating: place.rating || 4.5,
+          distance: place.distance || '2 км',
+          imageUrl: place.main_photo_url || defaultImage,
+          isPremium: place.isPremium || false,
+          tagIds: (place.PlaceTags || []).map(tag => String(tag.placesItems.id)) || [],
+          address: place.address || '',
+          priceLevel: place.priceLevel || 1
         }));
         
         console.log('All formatted places:', formattedPlaces);
