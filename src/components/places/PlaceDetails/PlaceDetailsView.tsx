@@ -116,6 +116,17 @@ const PlaceDetailsView: React.FC = () => {
     setLoading(false);
   }, [place]);
 
+  const handleBack = () => {
+    navigate('/');
+  };
+
+  const handleShare = () => {
+    if (window.Telegram?.WebApp?.showPopup && place) {
+      const shareMessage = `${place.name}\n${place.description}\n\nАдрес: ${place.address}`;
+      window.Telegram.WebApp.switchInlineQuery(shareMessage, ['users']);
+    }
+  };
+
   if (loading || !place) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -123,10 +134,6 @@ const PlaceDetailsView: React.FC = () => {
       </div>
     );
   }
-
-  const handleBack = () => {
-    navigate('/');
-  };
 
   const images = place.images || [place.imageUrl];
   const imageIndex = Math.abs(page % images.length);
@@ -171,19 +178,6 @@ const PlaceDetailsView: React.FC = () => {
     ));
   };
 
-  const getTagIcon = (tag: string) => {
-    switch (tag) {
-      case 'cafe':
-        return <Coffee className="w-4 h-4 text-white" />;
-      case 'bar':
-        return <Wine className="w-4 h-4 text-white" />;
-      case 'restaurant':
-        return <Users className="w-4 h-4 text-white" />;
-      default:
-        return null;
-    }
-  };
-
   const slideVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
@@ -215,7 +209,10 @@ const PlaceDetailsView: React.FC = () => {
             />
           </button>
           <div className="flex items-center gap-4">
-            <button onClick={() => console.log('Share clicked')}>
+            <button 
+              onClick={handleShare}
+              className="focus:outline-none"
+            >
               <img 
                 src={shareIcon} 
                 alt="Share" 
@@ -225,7 +222,10 @@ const PlaceDetailsView: React.FC = () => {
                 }} 
               />
             </button>
-            <button onClick={() => setIsFavorite(!isFavorite)}>
+            <button 
+              onClick={() => setIsFavorite(!isFavorite)}
+              className="focus:outline-none"
+            >
               <motion.svg 
                 width="24" 
                 height="20" 
@@ -236,6 +236,8 @@ const PlaceDetailsView: React.FC = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 xmlns="http://www.w3.org/2000/svg"
+                style={{ outline: 'none' }}
+                className="focus:outline-none cursor-pointer"
                 whileTap={{ scale: 0.85 }}
                 animate={{
                   scale: isFavorite ? [1, 1.2, 1] : 1,
@@ -402,7 +404,7 @@ const PlaceDetailsView: React.FC = () => {
                   : place.isPremium
                     ? 'bg-[#2846ED] text-white border border-white'
                     : 'bg-white text-[#020203] border border-[#969699]'
-                }`}
+                } focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2`}
               whileTap={{ scale: 0.95 }}
               animate={{
                 scale: wasHere ? [1, 1.1, 1] : 1,
@@ -452,7 +454,7 @@ const PlaceDetailsView: React.FC = () => {
               place.isPremium 
                 ? 'bg-[#2846ED] text-white border border-white' 
                 : 'bg-[#F9F9FE] text-[#1E47F7] border border-[#1E47F7]'
-            }`}
+            } focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2`}
           >
             <span>Построить маршрут</span>
           </button>
