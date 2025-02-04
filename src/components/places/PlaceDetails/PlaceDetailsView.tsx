@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Share2, ArrowLeft, MapPin, Star, Phone, Mail, Instagram } from 'lucide-react';
+import { MapPin, Star, Phone, Mail, Instagram } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Place } from '../../../types';
 import API from '../../../services/api';
@@ -9,19 +9,21 @@ import { RatingStars } from './RatingStars';
 import { tags } from '../../../data/tags';
 
 // Импортируем все иконки
-import tagFriends from '../../../assets/icons/tag_friends.svg';
-import tagPets from '../../../assets/icons/tag_pets.svg';
-import tagPartner from '../../../assets/icons/tag_partner.svg';
-import tagFamily from '../../../assets/icons/tag_family.svg';
-import tagSelfDevelopment from '../../../assets/icons/tag_self_development.svg';
-import tagAlone from '../../../assets/icons/tag_alone.svg';
-import tagShopping from '../../../assets/icons/tag_shopping.svg';
-import tagKids from '../../../assets/icons/tag_kids.svg';
-import tagSpa from '../../../assets/icons/tag_spa.svg';
-import tagFood from '../../../assets/icons/tag_food.svg';
-import tagEntertainment from '../../../assets/icons/tag_entertainment.svg';
-import tagCulture from '../../../assets/icons/tag_culture.svg';
-import tagActiveLeisure from '../../../assets/icons/tag_active_leisure.svg';
+import tagFriends from '/icons/tag_friends.svg';
+import tagPets from '/icons/tag_pets.svg';
+import tagPartner from '/icons/tag_partner.svg';
+import tagFamily from '/icons/tag_family.svg';
+import tagSelfDevelopment from '/icons/tag_self_development.svg';
+import tagAlone from '/icons/tag_alone.svg';
+import tagShopping from '/icons/tag_shopping.svg';
+import tagKids from '/icons/tag_kids.svg';
+import tagSpa from '/icons/tag_spa.svg';
+import tagFood from '/icons/tag_food.svg';
+import tagEntertainment from '/icons/tag_entertainment.svg';
+import tagCulture from '/icons/tag_culture.svg';
+import tagActiveLeisure from '/icons/tag_active_leisure.svg';
+import shareIcon from '/icons/share_icon.svg';
+import arrowLeft from '/icons/arrow.svg';
 
 // Создаем маппинг иконок
 const tagIcons: { [key: string]: string } = {
@@ -49,6 +51,7 @@ const PlaceDetailsView: React.FC = () => {
   const [[page, direction], setPage] = useState([0, 0]);
   const [wasHere, setWasHere] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // Загружаем категории
   useEffect(() => {
@@ -202,17 +205,66 @@ const PlaceDetailsView: React.FC = () => {
       <header className={`sticky top-0 z-50 ${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'}`}>
         <div className="flex items-center justify-between px-4 py-3">
           <button onClick={handleBack} className="p-2 -ml-2">
-            <ArrowLeft className={`w-6 h-6 ${place.isPremium ? 'text-white' : 'text-black'}`} />
+            <img
+              src={arrowLeft}
+              alt="Back"
+              className="w-4 h-4"
+              style={{ 
+                filter: place.isPremium ? 'brightness(0) invert(1)' : 'none'
+              }}
+            />
           </button>
-          <button>
-            <Share2 className={`w-6 h-6 ${place.isPremium ? 'text-white' : 'text-black'}`} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => console.log('Share clicked')}>
+              <img 
+                src={shareIcon} 
+                alt="Share" 
+                className="w-5 h-5"
+                style={{ 
+                  filter: place.isPremium ? 'brightness(0) invert(1)' : 'none'
+                }} 
+              />
+            </button>
+            <button onClick={() => setIsFavorite(!isFavorite)}>
+              <motion.svg 
+                width="24" 
+                height="20" 
+                viewBox="0 0 24 20" 
+                fill={isFavorite ? (place.isPremium ? '#FFFFFF' : '#1E47F7') : 'none'}
+                stroke={place.isPremium ? '#FFFFFF' : (isFavorite ? '#1E47F7' : '#020203')}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                xmlns="http://www.w3.org/2000/svg"
+                whileTap={{ scale: 0.85 }}
+                animate={{
+                  scale: isFavorite ? [1, 1.2, 1] : 1,
+                  transition: {
+                    duration: 0.3,
+                    times: [0, 0.5, 1]
+                  }
+                }}
+              >
+                <motion.path 
+                  d="M9.96566 8.69747C16.6695 -10.4384 35.2939 11.1754 7.42643 19C5.27957 17.4478 1.61955 9.99561 1.15321 7.74154C-0.566122 -0.406456 12.8127 -1.72458 9.96566 8.69747Z"
+                  initial={false}
+                  animate={{
+                    scale: isFavorite ? [1, 1.1, 1] : 1,
+                    transition: {
+                      duration: 0.3,
+                      times: [0, 0.5, 1]
+                    }
+                  }}
+                />
+              </motion.svg>
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="pb-20">
         {/* Основной блок */}
-        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-b-2xl mb-1`}>
+        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-b-2xl`}>
           <div className="h-[46px] flex flex-col justify-between px-4">
             <p className={`text-[14px] font-[500] leading-[16.77px] tracking-[-0.02em] ${place.isPremium ? 'text-white/80' : 'text-[#020203]'}`}>
               {place.mainTag}
@@ -342,7 +394,7 @@ const PlaceDetailsView: React.FC = () => {
 
           {/* Информация о заведении */}
           <div className="px-4 py-4 flex items-center justify-between gap-4">
-            <button
+            <motion.button
               onClick={() => setWasHere(!wasHere)}
               className={`w-[32vw] min-w-[125px] h-[7.1vw] min-h-[30px] rounded-full text-[2.8vw] min-text-[12px] font-medium leading-[1.2] tracking-[-0.02em] transition-colors whitespace-nowrap
                 ${wasHere 
@@ -351,9 +403,17 @@ const PlaceDetailsView: React.FC = () => {
                     ? 'bg-[#2846ED] text-white border border-white'
                     : 'bg-white text-[#020203] border border-[#969699]'
                 }`}
+              whileTap={{ scale: 0.95 }}
+              animate={{
+                scale: wasHere ? [1, 1.1, 1] : 1,
+                transition: {
+                  duration: 0.3,
+                  times: [0, 0.5, 1]
+                }
+              }}
             >
-              {wasHere ? 'Я здесь был(а)' : 'Я здесь не был(а)'}
-            </button>
+              {wasHere ? 'Я здесь был(а)' : 'Я здесь был(а)'}
+            </motion.button>
             
             <div className="flex items-center gap-2">
               <div 
@@ -383,7 +443,7 @@ const PlaceDetailsView: React.FC = () => {
         </div>
 
         {/* Дополнительно */}
-        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-2xl px-4 py-3 mb-1`}>
+        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-[24px] px-4 py-3 -mt-3`}>
           <h2 className={`text-[16px] font-[500] leading-[19.17px] tracking-[-0.02em] text-[#020203] mb-4 ${place.isPremium ? 'text-white' : ''}`}>Дополнительно</h2>
           
           {/* Построить маршрут */}
@@ -440,7 +500,7 @@ const PlaceDetailsView: React.FC = () => {
         </div>
 
         {/* Отзывы */}
-        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-2xl p-4`}>
+        <div className={`${place.isPremium ? 'bg-[#2846ED]' : 'bg-white'} rounded-[24px] p-4 -mt-3`}>
           <div className={`text-[14px] font-[500] leading-[16.77px] tracking-[-0.02em] mb-4 ${place.isPremium ? 'text-white' : 'text-[#020203]'}`}>
             {reviews.length} отзыва
           </div>
